@@ -1,7 +1,11 @@
+import { addTask, deleteTask, signIn, signOut, signUp, toggleTask } from './actions';
 
-export default function Home() {
+
+
+export default async function Home() {
+
   return (
-    <div>
-    </div>
+    <main className="">
+    </main>
   );
 }
