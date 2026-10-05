@@ -29,8 +29,10 @@ export async function signIn(formData: FormData) {
 export async function signUp(formData: FormData) {
   const email = value(formData, 'email');
   const password = value(formData, 'password');
+  const confirmPassword = value(formData, 'confirmPassword');
 
   if (!email || password.length < 8) redirect('/?error=signup');
+  if (password !== confirmPassword) redirect('/?error=password_mismatch');
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -42,6 +44,12 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
+    console.error('Supabase sign-up failed:', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+    });
+
     const message = error.message.toLowerCase();
     if (message.includes('error sending confirmation email')) {
       redirect('/?error=email_delivery');
@@ -66,7 +74,7 @@ export async function signOut() {
 
 export async function addTask(formData: FormData) {
   const title = value(formData, 'title');
-  if (!title || title.length > 120) redirect('/?error=task');
+  if (!title || title.length > 200) redirect('/?error=task');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

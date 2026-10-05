@@ -20,14 +20,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "fin tasks",
-  description: "مساحة شخصية لتنظيم مهامك اليومية.",
+  description: "A personal space to organize your daily tasks.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="ar"
-      dir="rtl"
+      lang="en"
+      dir="ltr"
       className={cn(
         "h-full",
         "antialiased",
