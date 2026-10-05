@@ -8,7 +8,19 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) return <Dashboard />;
+  if (user) {
+    const [{ error }, { data: tasks, error: tasksError }] = await Promise.all([
+      searchParams,
+      supabase.from('tasks').select('id, title, completed').order('created_at', { ascending: false }),
+    ]);
+
+    return (
+      <Dashboard
+        tasks={tasks ?? []}
+        taskError={tasksError !== null || error === 'task'}
+      />
+    );
+  }
 
   const { error, notice } = await searchParams;
 

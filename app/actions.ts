@@ -72,9 +72,35 @@ export async function signOut() {
   redirect('/');
 }
 
+async function verifyAccountCredentials(formData: FormData) {
+  const email = value(formData, 'email').toLowerCase();
+  const password = value(formData, 'password');
+  if (!email || !password) return false;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  return !error && data.user?.email?.toLowerCase() === email;
+}
+
+export async function verifyAccountDeletion(formData: FormData) {
+  return verifyAccountCredentials(formData);
+}
+
+export async function deleteAccount(formData: FormData) {
+  if (!(await verifyAccountCredentials(formData))) return false;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('delete_current_user');
+  if (error) return false;
+
+  await supabase.auth.signOut();
+  revalidatePath('/');
+  redirect('/?notice=account_deleted');
+}
+
 export async function addTask(formData: FormData) {
   const title = value(formData, 'title');
-  if (!title || title.length > 200) redirect('/?error=task');
+  if (!title || title.length > 120) redirect('/?error=task');
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -84,6 +110,25 @@ export async function addTask(formData: FormData) {
     title,
     user_id: user.id,
   });
+
+  if (error) redirect('/?error=task');
+  revalidatePath('/');
+}
+
+export async function updateTask(formData: FormData) {
+  const id = value(formData, 'id');
+  const title = value(formData, 'title');
+  if (!id || !title || title.length > 120) redirect('/?error=task');
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/');
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({ title })
+    .eq('id', id)
+    .eq('user_id', user.id);
 
   if (error) redirect('/?error=task');
   revalidatePath('/');

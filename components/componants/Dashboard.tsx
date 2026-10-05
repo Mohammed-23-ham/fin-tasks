@@ -1,269 +1,194 @@
 'use client';
 
 import {
-  ArrowUpLeft,
-  Bell,
-  CalendarBlank,
-  ChartLineUp,
+  ArrowRight,
   Check,
   CheckCircle,
   Clock,
   DotsThree,
-  GearSix,
   House,
   ListChecks,
-  MagnifyingGlass,
   Plus,
-  Sparkle,
+  SignOut,
   Target,
 } from '@phosphor-icons/react';
+import { addTask, deleteTask, signOut, toggleTask, updateTask } from '@/app/actions';
 
-const tasks = [
-  {
-    title: 'مراجعة ملخص المشروع مع الفريق',
-    project: 'إطلاق المنتج',
-    time: '09:30 ص',
-    color: 'mint',
-    done: true,
-  },
-  {
-    title: 'إرسال النسخة الأولى من العرض',
-    project: 'العمل',
-    time: '11:00 ص',
-    color: 'coral',
-    done: false,
-  },
-  {
-    title: 'تحديث قائمة أولويات الأسبوع',
-    project: 'شخصي',
-    time: '01:30 م',
-    color: 'blue',
-    done: false,
-  },
-  {
-    title: 'قراءة ٢٠ صفحة من الكتاب',
-    project: 'تطوير الذات',
-    time: '06:00 م',
-    color: 'yellow',
-    done: false,
-  },
-];
+type Task = {
+  id: string;
+  title: string;
+  completed: boolean;
+};
+
+type DashboardProps = {
+  tasks: Task[];
+  taskError: boolean;
+};
 
 const navigation = [
-  { label: 'نظرة عامة', icon: House, href: '#overview' },
-  { label: 'مهامي', icon: ListChecks, href: '#today', active: true, count: '٨' },
-  { label: 'تقويم المهام', icon: CalendarBlank, href: '#week' },
-  { label: 'الإحصائيات', icon: ChartLineUp, href: '#progress' },
+  { label: 'Overview', icon: House, href: '#overview' },
+  { label: 'My tasks', icon: ListChecks, href: '#today', active: true },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ tasks, taskError }: DashboardProps) {
+  const activeTasks = tasks.filter((task) => !task.completed);
+  const completedTasks = tasks.filter((task) => task.completed);
+  const completionRate = tasks.length === 0 ? 0 : Math.round((completedTasks.length / tasks.length) * 100);
+  const number = new Intl.NumberFormat('en-US');
   const now = new Date();
-  const today = new Intl.DateTimeFormat('ar-u-nu-arab', {
+  const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   }).format(now);
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + index);
-    return date;
-  });
-  const weekRangeFormatter = new Intl.DateTimeFormat('ar-u-nu-arab', {
-    day: 'numeric',
-    month: 'long',
-  });
-  const weekRange = `${weekRangeFormatter.format(weekDays[0])} – ${weekRangeFormatter.format(weekDays[6])}`;
-  const weekDayLabels = ['أح', 'إث', 'ث', 'أر', 'خ', 'ج', 'س'];
 
   return (
-    <main className="workspace" dir="rtl">
-      <aside className="workspace-sidebar" aria-label="القائمة الرئيسية">
-        <a className="workspace-brand" href="#overview">
-          <span className="workspace-brand-mark" aria-hidden="true">
+    <main className="grid min-h-screen grid-cols-[246px_minmax(0,1fr)] bg-[#f7f8f4] font-sans text-[#1d302b] max-[820px]:grid-cols-[66px_minmax(0,1fr)] max-[580px]:grid-cols-1" dir="ltr">
+      <aside className="sticky top-0 flex h-screen flex-col border-r border-[#e7ebe5] bg-white px-[17px] pt-[27px] pb-[18px] max-[820px]:items-center max-[820px]:px-2 max-[580px]:static max-[580px]:block max-[580px]:h-auto max-[580px]:min-h-0 max-[580px]:border-r-0 max-[580px]:border-b max-[580px]:px-4 max-[580px]:pt-3 max-[580px]:pb-2" aria-label="Main navigation">
+        <a className="mb-[43px] flex items-center gap-2.5 px-2 text-[15px] font-bold text-[#1d302b] no-underline max-[820px]:mb-[38px] max-[820px]:justify-center max-[580px]:mb-2 max-[580px]:w-fit max-[580px]:justify-start max-[580px]:px-[3px]" href="#overview">
+          <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px_10px_10px_3px] bg-[#176b55] text-white" aria-hidden="true">
             <Check size={19} weight="bold" />
           </span>
-          <span>فِن تاسكس</span>
+          <span className="max-[820px]:hidden max-[580px]:inline">Fin Tasks</span>
         </a>
 
-        <div className="sidebar-section-label">مساحة العمل</div>
-        <nav className="workspace-nav">
-          {navigation.map(({ label, icon: Icon, href, active, count }) => (
+        <div className="mb-3 px-2.5 text-[10px] font-semibold text-[#9ba59e] max-[820px]:hidden">Workspace</div>
+        <nav className="grid gap-1 max-[820px]:w-full max-[580px]:grid-cols-2 max-[580px]:gap-[3px]">
+          {navigation.map(({ label, icon: Icon, href, active }) => (
             <a
               key={label}
-              className={`workspace-nav-link${active ? ' is-active' : ''}`}
+              className={`flex min-h-[42px] items-center gap-[11px] rounded-[5px] px-[11px] text-xs no-underline transition-colors max-[820px]:justify-center max-[820px]:px-0 max-[580px]:min-h-[37px] ${active ? 'bg-[#eaf3ed] font-bold text-[#155f4b]' : 'text-[#66756d] hover:bg-[#f6f8f4] hover:text-[#1d302b]'}`}
               href={href}
+              aria-label={label}
               aria-current={active ? 'page' : undefined}
             >
               <Icon size={19} weight={active ? 'fill' : 'regular'} />
-              <span>{label}</span>
-              {count && <span className="nav-count">{count}</span>}
+              <span className="max-[820px]:hidden">{label}</span>
             </a>
           ))}
         </nav>
 
-        <div className="sidebar-section-label projects-label">قوائمك</div>
-        <div className="project-links">
-          <a href="#today"><i className="project-dot dot-coral" />العمل</a>
-          <a href="#today"><i className="project-dot dot-blue" />شخصي</a>
-          <a href="#today"><i className="project-dot dot-yellow" />تطوير الذات</a>
-        </div>
-
-        <div className="sidebar-bottom">
-          <div className="sidebar-tip">
-            <span className="tip-icon"><Sparkle size={17} weight="fill" /></span>
-            <p>خطوة صغيرة اليوم،<br />فرق كبير غدًا.</p>
-          </div>
-          <a className="workspace-nav-link settings-link" href="#settings">
-            <GearSix size={19} />
-            <span>الإعدادات</span>
-          </a>
-          <div className="sidebar-profile">
-            <span className="profile-avatar">م</span>
-            <span className="profile-copy"><strong>مساحتي</strong><small>مساحة شخصية</small></span>
-            <DotsThree size={21} weight="bold" />
-          </div>
-        </div>
       </aside>
 
-      <section className="workspace-main" id="overview">
-        <header className="workspace-topbar">
-          <div className="breadcrumb"><span>مساحة العمل</span><ArrowUpLeft size={14} /><strong>مهامي</strong></div>
-          <div className="topbar-actions">
-            <label className="workspace-search">
-              <MagnifyingGlass size={17} />
-              <input type="search" placeholder="ابحث عن مهمة..." aria-label="ابحث عن مهمة" />
-              <kbd>⌘ K</kbd>
-            </label>
-            <button className="icon-button notification-button" type="button" aria-label="الإشعارات">
-              <Bell size={19} />
-              <i />
+      <section className="min-w-0" id="overview">
+        <header className="flex h-[66px] items-center justify-between border-b border-[#e9ede8] bg-white/80 px-[clamp(24px,4.5vw,68px)] max-[580px]:h-14 max-[580px]:px-4">
+          <div className="flex items-center gap-2.5 text-[11px] text-[#97a19a] max-[580px]:gap-1.5 max-[580px]:text-[9px]"><span>Workspace</span><ArrowRight size={14} /><strong className="font-semibold text-[#40534a]">My tasks</strong></div>
+          <form action={signOut}>
+            <button className="grid size-[34px] place-items-center rounded-[5px] border-0 bg-transparent text-[#6f7d75] hover:bg-[#edf3ed] hover:text-[#3c6552]" type="submit" aria-label="Sign out" title="Sign out">
+              <SignOut size={19} />
             </button>
-            <span className="topbar-avatar" aria-label="الملف الشخصي">م</span>
-          </div>
+          </form>
         </header>
 
-        <div className="workspace-content">
-          <section className="welcome-row">
+        <div className="mx-auto w-[calc(100%-72px)] max-w-[1130px] py-[38px] pb-[58px] max-[1120px]:w-[calc(100%-48px)] max-[580px]:w-[calc(100%-32px)] max-[580px]:pt-[25px]">
+          <section className="mb-[25px]">
             <div>
-              <p className="workspace-date">{today}</p>
-              <h1>أهلًا بك، لننجز شيئًا جميلًا <span>✳</span></h1>
-              <p className="welcome-caption">رتّب أفكارك وخذ يومك خطوة بخطوة.</p>
-            </div>
-            <button className="today-selector" type="button">
-              <CalendarBlank size={17} />
-              <span>اليوم</span>
-            </button>
-          </section>
-
-          <section className="overview-strip" aria-label="ملخص المهام">
-            <div className="overview-stat">
-              <span className="stat-icon stat-icon-green"><ListChecks size={18} /></span>
-              <div><strong>٨</strong><span>مهام اليوم</span></div>
-              <small>منها ٤ مكتملة</small>
-            </div>
-            <div className="overview-stat">
-              <span className="stat-icon stat-icon-orange"><Clock size={18} /></span>
-              <div><strong>٤</strong><span>متبقية</span></div>
-              <small>أنت على المسار الصحيح</small>
-            </div>
-            <div className="overview-stat progress-stat" id="progress">
-              <span className="stat-icon stat-icon-blue"><Target size={18} /></span>
-              <div><strong>٥٠٪</strong><span>إنجاز اليوم</span></div>
-              <span className="progress-track"><i /></span>
+              <p className="mb-[11px] text-[11px] text-[#76877d]">{today}</p>
+              <h1 className="m-0 text-[clamp(22px,2.3vw,29px)] leading-[1.55] font-bold text-[#20352c] max-[580px]:text-xl">Welcome back. Let’s make progress.</h1>
+              <p className="mt-1 max-w-[240px] text-[11px] leading-[1.7] text-[#8a9890]">Keep your priorities clear and move one task at a time.</p>
             </div>
           </section>
 
-          <div className="task-layout">
-            <section className="task-column" id="today">
-              <div className="section-heading">
+          <section className="grid min-h-[98px] grid-cols-3 rounded-md border border-[#e8ede7] bg-white max-[580px]:min-h-[78px]" aria-label="Task summary">
+            <div className="grid grid-cols-[38px_auto_1fr] content-center items-center gap-[9px] px-5 py-[17px] max-[1120px]:grid-cols-[34px_auto] max-[1120px]:px-[13px] max-[580px]:flex max-[580px]:flex-col max-[580px]:justify-center max-[580px]:gap-1.5 max-[580px]:px-[3px] max-[580px]:py-[9px] max-[580px]:text-center">
+              <span className="grid size-9 place-items-center rounded-[5px] bg-[#e9f3e9] text-[#34745b] max-[580px]:hidden"><ListChecks size={18} /></span>
+              <div className="grid gap-[3px] max-[580px]:gap-1">
+                <strong className="text-[19px] leading-none text-[#2b4036] max-[580px]:text-[17px]">{number.format(tasks.length)}</strong>
+                <span className="text-[9px] text-[#86948b] max-[580px]:text-[8px]">Total tasks</span>
+              </div>
+              <small className="justify-self-end whitespace-nowrap text-[9px] text-[#86948b] max-[1120px]:hidden">{number.format(completedTasks.length)} completed</small>
+            </div>
+            <div className="grid grid-cols-[38px_auto_1fr] content-center items-center gap-[9px] border-l border-[#edf0eb] px-5 py-[17px] max-[1120px]:grid-cols-[34px_auto] max-[1120px]:px-[13px] max-[580px]:flex max-[580px]:flex-col max-[580px]:justify-center max-[580px]:gap-1.5 max-[580px]:px-[3px] max-[580px]:py-[9px] max-[580px]:text-center">
+              <span className="grid size-9 place-items-center rounded-[5px] bg-[#fbefe6] text-[#b7734f] max-[580px]:hidden"><Clock size={18} /></span>
+              <div className="grid gap-[3px] max-[580px]:gap-1">
+                <strong className="text-[19px] leading-none text-[#2b4036] max-[580px]:text-[17px]">{number.format(activeTasks.length)}</strong>
+                <span className="text-[9px] text-[#86948b] max-[580px]:text-[8px]">Remaining</span>
+              </div>
+              <small className="justify-self-end whitespace-nowrap text-[9px] text-[#86948b] max-[1120px]:hidden">Tasks to complete</small>
+            </div>
+            <div className="grid grid-cols-[38px_auto_minmax(55px,1fr)] content-center items-center gap-[9px] border-l border-[#edf0eb] px-5 py-[17px] max-[1120px]:flex max-[1120px]:flex-col max-[1120px]:justify-center max-[1120px]:px-[13px] max-[1120px]:py-[15px] max-[1120px]:text-center max-[580px]:gap-1.5 max-[580px]:px-[3px] max-[580px]:py-[9px]">
+              <span className="grid size-9 place-items-center rounded-[5px] bg-[#eaf1f5] text-[#5c7f97] max-[580px]:hidden"><Target size={18} /></span>
+              <div className="grid gap-[3px] max-[580px]:gap-1">
+                <strong className="text-[19px] leading-none text-[#2b4036] max-[580px]:text-[17px]">{number.format(completionRate)}%</strong>
+                <span className="text-[9px] text-[#86948b] max-[580px]:text-[8px]">Completion</span>
+              </div>
+              <span className="h-[5px] overflow-hidden rounded-full bg-[#edf1ec] max-[1120px]:hidden"><i className="block h-full rounded-full bg-[#5c9876]" style={{ width: `${completionRate}%` }} /></span>
+            </div>
+          </section>
+
+          <div className="mt-[35px] grid grid-cols-1 items-start gap-[26px] max-[1120px]:gap-[18px] max-[580px]:mt-[27px]">
+            <section className="min-w-0" id="today">
+              <div className="mb-[18px] flex items-end justify-between max-[580px]:items-start">
                 <div>
-                  <h2>مهام اليوم <span className="heading-count">٤</span></h2>
-                  <p>ابدأ بالأهم، والباقي سيأتي.</p>
+                  <h2 className="m-0 flex items-center gap-[9px] text-base text-[#2b4036] max-[580px]:text-sm">My tasks <span className="grid min-w-[21px] h-5 place-items-center rounded bg-[#e9efea] text-[10px] font-semibold text-[#6a7e72]">{number.format(tasks.length)}</span></h2>
+                  <p className="mt-[5px] text-[10px] text-[#909c94]">Everything you need to get done.</p>
                 </div>
-                <button className="sort-control" type="button">ترتيب حسب الوقت <span>⌄</span></button>
               </div>
 
-              <div className="task-composer" role="group" aria-label="إضافة مهمة">
-                <span className="composer-plus"><Plus size={20} weight="bold" /></span>
-                <input type="text" placeholder="ما المهمة التي تريد إنجازها؟" aria-label="عنوان المهمة الجديدة" />
-                <span className="composer-shortcut">⌘ ↵</span>
-                <button type="button" className="composer-submit"><Plus size={17} />إضافة مهمة</button>
-              </div>
+              {taskError && <p className="mb-[9px] text-[11px] text-[#a45248]" role="alert">We couldn’t save that task. Check the details and try again.</p>}
 
-              <div className="task-list-heading">
-                <span>اليوم</span>
-                <span>٤ مهام</span>
+              <form action={addTask} className="flex min-h-[55px] items-center gap-[11px] rounded-md border border-[#e1e9df] bg-white px-2 py-[7px] pl-[13px] shadow-[0_4px_15px_rgb(31_63_44_/_3%)] max-[580px]:gap-[7px] max-[580px]:p-1.5" aria-label="Add a task">
+                <span className="grid size-[25px] shrink-0 place-items-center rounded-[5px] bg-[#edf5ed] text-[#34775d]"><Plus size={20} weight="bold" /></span>
+                <input className="h-9 w-full min-w-0 border-0 bg-transparent text-[11px] text-[#34473d] outline-none placeholder:text-[#a0aaa3]" type="text" name="title" maxLength={120} required placeholder="What needs to get done?" aria-label="New task title" />
+                <span className="shrink-0 text-[9px] text-[#aab2ac] max-[580px]:hidden">⌘ ↵</span>
+                <button type="submit" className="inline-flex min-h-[35px] shrink-0 items-center gap-[5px] rounded bg-[#176b55] px-[10px] text-[10px] text-white hover:bg-[#105640] max-[580px]:min-h-[33px] max-[580px]:gap-0.5 max-[580px]:px-[7px] max-[580px]:text-[9px]"><Plus size={17} />Add task</button>
+              </form>
+
+              <div className="mt-[25px] mb-[5px] flex justify-between px-0.5 text-[10px] text-[#839188]">
+                <span>To do</span>
+                <span className="text-[9px] text-[#9ba59e]">{number.format(activeTasks.length)} tasks</span>
               </div>
-              <ul className="workspace-task-list">
-                {tasks.map((task) => (
-                  <li className={`workspace-task${task.done ? ' task-is-done' : ''}`} key={task.title}>
-                    <span className={`task-marker${task.done ? ' marker-done' : ''}`} aria-hidden="true">
-                      {task.done && <Check size={13} weight="bold" />}
+              <ul className="m-0 list-none border-t border-[#e7ece6] p-0">
+                {activeTasks.map((task) => (
+                  <li className="flex min-h-[69px] items-center gap-3 border-b border-[#e9ede8] max-[580px]:min-h-16 max-[580px]:gap-2" key={task.id}>
+                    <form action={toggleTask}>
+                      <input type="hidden" name="id" value={task.id} />
+                      <input type="hidden" name="completed" value="false" />
+                      <button className="grid size-[18px] place-items-center rounded-full border-[1.5px] border-[#bdcbc0] bg-transparent p-0 text-white" type="submit" aria-label={`Complete: ${task.title}`} />
+                    </form>
+                    <span className="min-w-0 flex-1">
+                      <strong className="break-words text-[11px] font-semibold text-[#34463c] max-[580px]:text-[10px]">{task.title}</strong>
                     </span>
-                    <span className="workspace-task-copy">
-                      <strong>{task.title}</strong>
-                      <span><i className={`project-dot dot-${task.color}`} />{task.project}</span>
-                    </span>
-                    <span className="task-time"><Clock size={14} />{task.time}</span>
-                    <button type="button" className="task-more" aria-label={`خيارات: ${task.title}`}>
-                      <DotsThree size={21} weight="bold" />
-                    </button>
+                    <details className="relative w-[27px] shrink-0 max-[580px]:w-[22px]">
+                      <summary className="grid h-[30px] w-full cursor-pointer list-none place-items-center rounded text-[#9ca69f] hover:bg-[#edf3ed] hover:text-[#3c6552]" aria-label={`Options for ${task.title}`}><DotsThree size={21} weight="bold" /></summary>
+                      <div className="absolute top-full right-0 z-10 grid min-w-[190px] gap-2 rounded-md border border-[#e1e9df] bg-white p-2.5 shadow-lg">
+                        <form action={updateTask} className="grid gap-1.5">
+                          <input type="hidden" name="id" value={task.id} />
+                          <input className="h-[31px] min-w-0 rounded border border-[#e1e9df] px-[7px] text-[10px] text-[#34473d]" type="text" name="title" defaultValue={task.title} maxLength={120} required aria-label="Edit task title" />
+                          <button className="min-h-7 rounded bg-[#f0f5ef] px-2 text-left text-[10px] text-[#456452]" type="submit">Save changes</button>
+                        </form>
+                        <form action={deleteTask}>
+                          <input type="hidden" name="id" value={task.id} />
+                          <button className="min-h-7 w-full rounded bg-[#fbefed] px-2 text-left text-[10px] text-[#a45248]" type="submit">Delete task</button>
+                        </form>
+                      </div>
+                    </details>
                   </li>
                 ))}
               </ul>
+              {activeTasks.length === 0 && <p className="my-3.5 text-[11px] text-[#909c94]">No tasks to do. Add one above to get started.</p>}
 
-              <div className="completed-heading">
+              <div className="mt-6 mb-2 flex items-center gap-2 text-[11px] text-[#6e8c78]" id="completed">
                 <CheckCircle size={17} weight="fill" />
-                <span>مكتملة</span>
-                <span className="heading-count">٤</span>
+                <span>Completed</span>
+                <span className="ml-px grid h-[18px] min-w-[19px] place-items-center rounded bg-[#e9f0e9] text-[9px] text-[#7b9382]">{number.format(completedTasks.length)}</span>
               </div>
-              <div className="completed-preview">
-                <span className="completed-check"><Check size={12} weight="bold" /></span>
-                <span>الرد على رسائل الصباح</span>
-                <span>08:45 ص</span>
-              </div>
+              {completedTasks.map((task) => (
+                <div className="flex min-h-12 items-center gap-2.5 rounded bg-[#f0f3ee] px-[9px] text-[10px] text-[#a2aca4]" key={task.id}>
+                  <form action={toggleTask}>
+                    <input type="hidden" name="id" value={task.id} />
+                    <input type="hidden" name="completed" value="true" />
+                    <button className="grid size-4 place-items-center rounded-full border-0 bg-[#83a38c] p-0 text-white" type="submit" aria-label={`Reopen: ${task.title}`}><Check size={12} weight="bold" /></button>
+                  </form>
+                  <span className="flex-1 line-through">{task.title}</span>
+                  <form action={deleteTask}>
+                    <input type="hidden" name="id" value={task.id} />
+                    <button className="min-h-7 rounded bg-[#fbefed] px-2 text-[10px] text-[#a45248]" type="submit">Delete</button>
+                  </form>
+                </div>
+              ))}
             </section>
 
-            <aside className="workspace-rail">
-              <section className="focus-panel">
-                <div className="focus-panel-heading">
-                  <span className="focus-icon"><Sparkle size={18} weight="fill" /></span>
-                  <span>مساحة التركيز</span>
-                  <DotsThree size={20} />
-                </div>
-                <p className="focus-label">مهمتك التالية</p>
-                <h3>إرسال النسخة الأولى من العرض</h3>
-                <div className="focus-project"><i className="project-dot dot-coral" />العمل</div>
-                <div className="focus-divider" />
-                <div className="focus-time"><Clock size={15} /><span>موعدها</span><strong>11:00 ص</strong></div>
-                <div className="focus-footer"><span><i />جلسة تركيز مقترحة</span><strong>٢٥ دقيقة</strong></div>
-              </section>
-
-              <section className="week-panel" id="week">
-                <div className="week-panel-heading">
-                  <div><h2>هذا الأسبوع</h2><p>{weekRange}</p></div>
-                  <button type="button" aria-label="عرض التقويم"><CalendarBlank size={17} /></button>
-                </div>
-                <div className="week-days" aria-label="أيام الأسبوع">
-                  {weekDays.map((day) => (
-                    <span className={day.toDateString() === now.toDateString() ? 'day-current' : ''} key={day.toISOString()}>
-                      <small>{weekDayLabels[day.getDay()]}</small>
-                      <b>{new Intl.DateTimeFormat('ar-u-nu-arab', { day: 'numeric' }).format(day)}</b>
-                    </span>
-                  ))}
-                </div>
-                <div className="week-summary"><span>إنجازك هذا الأسبوع</span><strong>١٢ من ٢٠ مهمة</strong></div>
-                <div className="week-progress"><i /></div>
-              </section>
-
-              <div className="daily-note">
-                <span className="note-mark">“</span>
-                <p>لا تحتاج أن تنجز كل شيء اليوم. فقط ابدأ.</p>
-                <span>تذكير صغير</span>
-              </div>
-            </aside>
           </div>
         </div>
       </section>
