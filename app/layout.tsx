@@ -18,8 +18,43 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "fin tasks",
-  description: "A personal space to organize your daily tasks.",
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+    : undefined,
+  title: "Fin Tasks | Simple Daily Task Manager",
+  description:
+    "Plan your day, organize priorities, and keep track of completed tasks with Fin Tasks, a simple personal task manager.",
+  applicationName: "Fin Tasks",
+  alternates: process.env.NEXT_PUBLIC_SITE_URL
+    ? { canonical: "/" }
+    : undefined,
+  openGraph: {
+    title: "Fin Tasks | Simple Daily Task Manager",
+    description:
+      "Plan your day, organize priorities, and keep track of completed tasks with Fin Tasks.",
+    siteName: "Fin Tasks",
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Fin Tasks, a simple daily task manager",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fin Tasks | Simple Daily Task Manager",
+    description:
+      "Plan your day, organize priorities, and keep track of completed tasks with Fin Tasks.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: Boolean(process.env.NEXT_PUBLIC_SITE_URL),
+    follow: Boolean(process.env.NEXT_PUBLIC_SITE_URL),
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
