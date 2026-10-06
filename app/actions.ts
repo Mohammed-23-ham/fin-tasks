@@ -72,26 +72,20 @@ export async function signOut() {
   redirect('/');
 }
 
-async function verifyAccountCredentials(formData: FormData) {
-  const email = value(formData, 'email').toLowerCase();
-  const password = value(formData, 'password');
-  if (!email || !password) return false;
-
+export async function deleteAccount() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  return !error && data.user?.email?.toLowerCase() === email;
-}
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) redirect('/');
 
-export async function verifyAccountDeletion(formData: FormData) {
-  return verifyAccountCredentials(formData);
-}
-
-export async function deleteAccount(formData: FormData) {
-  if (!(await verifyAccountCredentials(formData))) return false;
-
-  const supabase = await createClient();
   const { error } = await supabase.rpc('delete_current_user');
-  if (error) return false;
+  if (error) {
+    console.error('Supabase account deletion failed:', {
+      code: error.code,
+      message: error.message,
+      hint: error.hint,
+    });
+    return false;
+  }
 
   await supabase.auth.signOut();
   revalidatePath('/');

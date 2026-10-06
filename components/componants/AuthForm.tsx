@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition, type FormEvent } from 'react';
-import { deleteAccount, signIn, signUp, verifyAccountDeletion } from '@/app/actions';
+import { useState } from 'react';
+import { signIn, signUp } from '@/app/actions';
 import Link from 'next/link';
 
 type AuthFormProps = {
@@ -20,43 +20,9 @@ const errorMessages: Record<string, string> = {
 
 export default function AuthForm({ error, notice }: AuthFormProps) {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [deleteFormOpen, setDeleteFormOpen] = useState(false);
-  const [deleteInvalid, setDeleteInvalid] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-  const [isPending, startTransition] = useTransition();
   const errorMessage = error
     ? errorMessages[error] ?? 'We could not complete your request. Please try again.'
     : null;
-
-  function handleAccountDeletion(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    startTransition(async () => {
-      const verified = await verifyAccountDeletion(formData);
-      if (!verified) {
-        form.reset();
-        setDeleteInvalid(true);
-        setDeleteError('Email or password does not match this account.');
-        return;
-      }
-
-      window.alert('Your account and its tasks will be permanently deleted.');
-      const deleted = await deleteAccount(formData);
-      if (!deleted) {
-        form.reset();
-        setDeleteInvalid(true);
-        setDeleteError('We could not delete your account. Please try again.');
-      }
-    });
-  }
-
-  function closeDeleteForm() {
-    setDeleteFormOpen(false);
-    setDeleteInvalid(false);
-    setDeleteError('');
-  }
 
   return (
     <main className="grid min-h-screen grid-cols-1 bg-white text-[#182b2a] lg:grid-cols-[1.05fr_.95fr]">
@@ -174,60 +140,12 @@ export default function AuthForm({ error, notice }: AuthFormProps) {
               </label>
             )}
 
-            <div className={`mt-2 flex gap-3 ${activeTab === 'signin' ? '' : 'w-full'}`}>
-              <button className={`inline-flex h-11 items-center justify-center rounded-md bg-[#176b55] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#105640] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176b55] ${activeTab === 'signin' ? 'flex-1' : 'w-full'}`} type="submit">
+            <div className="mt-2 flex w-full">
+              <button className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#176b55] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#105640] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#176b55]" type="submit">
                 {activeTab === 'signin' ? 'Sign in' : 'Create account'}
               </button>
-              {activeTab === 'signin' && (
-                <button
-                  className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-[#df8b82] px-3 text-sm font-semibold text-[#a64038] transition-colors hover:bg-[#fff2f0]"
-                  type="button"
-                  onClick={() => setDeleteFormOpen((open) => !open)}
-                >
-                  Delete account
-                </button>
-              )}
             </div>
           </form>
-
-          {activeTab === 'signin' && deleteFormOpen && (
-            <form className="mt-4 grid gap-3 rounded-md border border-[#f1d1c6] bg-[#fffaf8] p-4" onSubmit={handleAccountDeletion}>
-              <p className="m-0 text-sm font-semibold text-[#7d3f32]">Verify your account before deletion</p>
-              <label className="grid gap-1.5 text-xs font-semibold text-[#34463c]" htmlFor="delete-email">
-                Account email
-                <input
-                  className={`h-11 rounded-md border bg-white px-3 text-sm font-normal outline-none transition focus:ring-2 ${deleteInvalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : 'border-[#dfe7df] focus:border-[#176b55] focus:ring-[#176b55]/15'}`}
-                  id="delete-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  onChange={() => { setDeleteInvalid(false); setDeleteError(''); }}
-                />
-              </label>
-              <label className="grid gap-1.5 text-xs font-semibold text-[#34463c]" htmlFor="delete-password">
-                Password
-                <input
-                  className={`h-11 rounded-md border bg-white px-3 text-sm font-normal outline-none transition focus:ring-2 ${deleteInvalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : 'border-[#dfe7df] focus:border-[#176b55] focus:ring-[#176b55]/15'}`}
-                  id="delete-password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  onChange={() => { setDeleteInvalid(false); setDeleteError(''); }}
-                />
-              </label>
-              {deleteError && <p className="m-0 text-xs text-red-600" role="alert">{deleteError}</p>}
-              <div className="flex gap-3">
-                <button className="h-10 flex-1 rounded-md bg-[#a64038] px-3 text-sm font-semibold text-white hover:bg-[#87352f] disabled:opacity-60" type="submit" disabled={isPending}>
-                  {isPending ? 'Please wait…' : 'Verify and delete'}
-                </button>
-                <button className="h-10 rounded-md border border-[#dfe7df] px-4 text-sm text-[#53655c]" type="button" onClick={closeDeleteForm} disabled={isPending}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
         </div>
       </section>
     </main>

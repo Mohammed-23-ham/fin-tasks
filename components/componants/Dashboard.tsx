@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useTransition } from 'react';
+
 import {
   ArrowRight,
   Check,
@@ -11,8 +13,9 @@ import {
   Plus,
   SignOut,
   Target,
+  Trash,
 } from '@phosphor-icons/react';
-import { addTask, deleteTask, signOut, toggleTask, updateTask } from '@/app/actions';
+import { addTask, deleteAccount, deleteTask, signOut, toggleTask, updateTask } from '@/app/actions';
 
 type Task = {
   id: string;
@@ -31,6 +34,9 @@ const navigation = [
 ];
 
 export default function Dashboard({ tasks, taskError }: DashboardProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [isPending, startTransition] = useTransition();
   const activeTasks = tasks.filter((task) => !task.completed);
   const completedTasks = tasks.filter((task) => task.completed);
   const completionRate = tasks.length === 0 ? 0 : Math.round((completedTasks.length / tasks.length) * 100);
@@ -41,6 +47,14 @@ export default function Dashboard({ tasks, taskError }: DashboardProps) {
     day: 'numeric',
     month: 'long',
   }).format(now);
+
+  function confirmAccountDeletion() {
+    startTransition(async () => {
+      setDeleteError('');
+      const deleted = await deleteAccount();
+      if (!deleted) setDeleteError('We could not delete your account. Please try again.');
+    });
+  }
 
   return (
     <main className="grid min-h-screen grid-cols-[246px_minmax(0,1fr)] bg-[#f7f8f4] font-sans text-[#1d302b] max-[820px]:grid-cols-[66px_minmax(0,1fr)] max-[580px]:grid-cols-1" dir="ltr">
@@ -73,12 +87,62 @@ export default function Dashboard({ tasks, taskError }: DashboardProps) {
       <section className="min-w-0" id="overview">
         <header className="flex h-[66px] items-center justify-between border-b border-[#e9ede8] bg-white/80 px-[clamp(24px,4.5vw,68px)] max-[580px]:h-14 max-[580px]:px-4">
           <div className="flex items-center gap-2.5 text-[11px] text-[#97a19a] max-[580px]:gap-1.5 max-[580px]:text-[9px]"><span>Workspace</span><ArrowRight size={14} /><strong className="font-semibold text-[#40534a]">My tasks</strong></div>
-          <form action={signOut}>
-            <button className="grid size-[34px] place-items-center rounded-[5px] border-0 bg-transparent text-[#6f7d75] hover:bg-[#edf3ed] hover:text-[#3c6552]" type="submit" aria-label="Sign out" title="Sign out">
-              <SignOut size={19} />
+          <div className="flex items-center gap-1">
+            <button
+              className="grid size-[34px] place-items-center rounded-[5px] border-0 bg-transparent text-[#a45248] hover:bg-[#fff0ed] hover:text-[#87352f]"
+              type="button"
+              aria-label="Delete account"
+              title="Delete account"
+              onClick={() => { setDeleteError(''); setDeleteDialogOpen(true); }}
+            >
+              <Trash size={19} />
             </button>
-          </form>
+            <form action={signOut}>
+              <button className="grid size-[34px] place-items-center rounded-[5px] border-0 bg-transparent text-[#6f7d75] hover:bg-[#edf3ed] hover:text-[#3c6552]" type="submit" aria-label="Sign out" title="Sign out">
+                <SignOut size={19} />
+              </button>
+            </form>
+          </div>
         </header>
+
+        {deleteDialogOpen && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-[#17241f]/45 px-4">
+            <section
+              className="w-full max-w-[420px] rounded-md border border-[#eadbd7] bg-white p-5 shadow-xl"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title"
+              aria-describedby="delete-account-description"
+            >
+              <div className="mb-3 flex size-10 items-center justify-center rounded-md bg-[#fff0ed] text-[#a45248]">
+                <Trash size={20} />
+              </div>
+              <h2 className="m-0 text-base font-semibold text-[#26382f]" id="delete-account-title">Delete your account?</h2>
+              <p className="mt-2 text-sm leading-6 text-[#687970]" id="delete-account-description">
+                This permanently deletes your account and all of your tasks. This action cannot be undone.
+              </p>
+              {deleteError && <p className="mt-3 text-sm text-[#a64038]" role="alert">{deleteError}</p>}
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  className="min-h-9 rounded border border-[#dfe7df] px-3 text-sm text-[#53655c] hover:bg-[#f6f8f4] disabled:opacity-60"
+                  type="button"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={isPending}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="min-h-9 rounded bg-[#a64038] px-3 text-sm font-semibold text-white hover:bg-[#87352f] disabled:opacity-60"
+                  type="button"
+                  onClick={confirmAccountDeletion}
+                  disabled={isPending}
+                >
+                  {isPending ? 'Deleting…' : 'Delete account'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
         <div className="mx-auto w-[calc(100%-72px)] max-w-[1130px] py-[38px] pb-[58px] max-[1120px]:w-[calc(100%-48px)] max-[580px]:w-[calc(100%-32px)] max-[580px]:pt-[25px]">
           <section className="mb-[25px]">
